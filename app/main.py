@@ -5,7 +5,8 @@ from logging.config import dictConfig
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from app.core.config import LoggingConfig, settings
+from app.core.config import settings
+from app.core.log_config import LoggingConfig
 
 dictConfig(LoggingConfig.to_dict())
 logger = logging.getLogger(__name__)
