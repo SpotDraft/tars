@@ -1,0 +1,41 @@
+[project]
+name = "tars"
+version = "0.1.0"
+description = "Tars microservice"
+authors = [{ name = "SpotDraft", email = "engineering@spotdraft.com" }]
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # Web framework + ASGI server
+    "fastapi>=0.128.0",
+    "uvicorn[standard]>=0.35.0",
+
+    # Data validation (Pydantic V2 — team standard across all services)
+    "pydantic>=2.11.0",
+    "pydantic-settings>=2.10.0",   # .env config via BaseSettings
+
+    # Structured JSON logging (needed from first deployment for GCP Log Explorer)
+    "python-json-logger>=3.2.0",
+]
+
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.3.0",
+    "httpx>=0.28.0",     # AsyncClient for testing FastAPI without a live server
+    # Code quality
+    "ruff>=0.14.0",
+    "mypy>=1.19.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "unit: fast unit tests",
+    "integration: tests requiring external services",
+]
