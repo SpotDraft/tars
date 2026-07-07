@@ -37,7 +37,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    UniqueConstraint,
+    func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -102,9 +103,8 @@ class Packet(SoftDeleteMixin, RuntimeBaseModel):
         default=uuid.uuid4,
         comment="Stable public identifier exposed to SDK callers",
     )
-    # FK to packet_settings — same table, DB-level constraint
     packet_settings_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("packet_settings.id"), nullable=False
+        BigInteger, ForeignKey("packet_settings.id"), nullable=False, unique=True
     )
     updated_by_org_user_at: Mapped[datetime | None] = mapped_column(
         nullable=True,
@@ -112,17 +112,20 @@ class Packet(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's clickwrap_name_unique_per_workspace
-        UniqueConstraint(
+        Index(
+            "packet_name_unique_per_workspace",
             "workspace_id",
             "name_slug",
-            name="packet_name_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # Maps Django's clickwrap_workspace_index
         Index("packet_workspace_idx", "workspace_id"),
-        # Maps Django's clickwrap_name_slug_gin_index
-        Index("packet_name_slug_gin_idx", "name_slug", postgresql_using="gin"),
+        Index(
+            "packet_name_slug_gin_idx",
+            "name_slug",
+            postgresql_using="gin",
+            postgresql_ops={"name_slug": "gin_trgm_ops"},
+        ),
     )
 
 
@@ -153,11 +156,12 @@ class DomainSetting(SoftDeleteMixin, RuntimeBaseModel):
 
     __table_args__ = (
         # Maps Django's custom_domain_unique_per_workspace
-        UniqueConstraint(
+        Index(
+            "domain_setting_custom_domain_unique_per_workspace",
             "workspace_id",
             "custom_domain",
-            name="domain_setting_custom_domain_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
         # Maps Django's cwd_index_workspace_index
         Index("domain_setting_workspace_idx", "workspace_id"),
@@ -176,7 +180,6 @@ class DomainSetting(SoftDeleteMixin, RuntimeBaseModel):
 class WhitelabelConfig(SoftDeleteMixin, RuntimeBaseModel):
     __tablename__ = "whitelabel_config"
 
-    # GCS object path — equivalent to Django FileField column value
     company_logo: Mapped[str] = mapped_column(
         Text, nullable=False, comment="GCS object path for company logo"
     )
@@ -200,21 +203,18 @@ class WhitelabelConfig(SoftDeleteMixin, RuntimeBaseModel):
     display_published_agreements: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
-    # GCS object path — equivalent to Django FileField column value
-    # FaviconIconValidator moves to Pydantic schema / use case
     favicon_icon: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="GCS object path for favicon (.ico)"
     )
 
     __table_args__ = (
-        # Maps Django's unique_clickwrap_agreement_config_per_workspace
-        UniqueConstraint(
+        Index(
+            "whitelabel_config_unique_per_workspace",
             "workspace_id",
             "is_active",
-            name="whitelabel_config_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # Maps Django's unnamed (tenant_workspace, is_active) index
         Index("whitelabel_config_workspace_is_active_idx", "workspace_id", "is_active"),
     )
 
@@ -238,14 +238,13 @@ class Agreement(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's unique_url_slug_per_workspace
-        UniqueConstraint(
+        Index(
+            "agreement_url_slug_unique_per_workspace",
             "workspace_id",
             "url_slug",
-            name="agreement_url_slug_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # No explicit indexes in Django for this table — none added.
     )
 
 
@@ -266,16 +265,14 @@ class PacketAgreementMapping(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's clickwrap_agreement_mapping_unique
-        UniqueConstraint(
+        Index(
+            "packet_agreement_mapping_unique",
             "packet_id",
             "agreement_id",
-            name="packet_agreement_mapping_unique",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # Maps Django's clickwrap_index
         Index("packet_agreement_mapping_packet_idx", "packet_id"),
-        # Maps Django's agreement_index
         Index("packet_agreement_mapping_agreement_idx", "agreement_id"),
     )
 
@@ -336,41 +333,42 @@ class AgreementVersion(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's unique_current_version_per_agreement
-        UniqueConstraint(
-            "agreement_id",
-            name="agreement_version_unique_current_per_agreement",
-            postgresql_where="is_current = true AND is_deleted = false",
-        ),
-        # Maps Django's unique_full_version_number_per_clickwrap_agreement
-        UniqueConstraint(
+        Index(
+            "agreement_version_unique_version_number",
             "version_number",
             "sub_version_number",
             "agreement_id",
-            name="agreement_version_unique_version_number",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
         # Maps Django's unique_status_equals_published_per_agreement
-        UniqueConstraint(
+        Index(
+            "agreement_version_unique_published_per_agreement",
             "agreement_id",
-            name="agreement_version_unique_published_per_agreement",
-            postgresql_where="status = 'PUBLISHED' AND is_deleted = false",
+            unique=True,
+            postgresql_where=text("status = 'PUBLISHED' AND is_deleted = false"),
         ),
         # Maps Django's unique_status_equals_draft_per_agreement
-        UniqueConstraint(
+        Index(
+            "agreement_version_unique_draft_per_agreement",
             "agreement_id",
-            name="agreement_version_unique_draft_per_agreement",
-            postgresql_where="status = 'DRAFT' AND is_deleted = false",
+            unique=True,
+            postgresql_where=text("status = 'DRAFT' AND is_deleted = false"),
         ),
         # Maps Django's cw_agg_ver_name_slug_gin_index
-        Index("agreement_version_name_slug_gin_idx", "name_slug", postgresql_using="gin"),
+        # Requires pg_trgm extension (enabled in migration)
+        Index(
+            "agreement_version_name_slug_gin_idx",
+            "name_slug",
+            postgresql_using="gin",
+            postgresql_ops={"name_slug": "gin_trgm_ops"},
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
 # legal_hub  (Django: ClickwrapLegalHub)
 # Curated collection of agreements surfaced as a hosted page.
-# `is_default` renamed from Django's `default` (Python/SQL reserved word).
 # ---------------------------------------------------------------------------
 
 
@@ -388,31 +386,27 @@ class LegalHub(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's lh_slug_unique_per_workspace
-        UniqueConstraint(
+        Index(
+            "legal_hub_slug_unique_per_workspace",
             "workspace_id",
             "url_slug",
-            name="legal_hub_slug_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
         # Maps Django's lh_name_unique_per_workspace (Lower(F("name")))
-        # Note: Django uses case-insensitive Lower() here. The migration must
-        # manually create a functional index on lower(name) — autogenerate
-        # will produce a plain unique constraint which should be replaced with:
-        #   CREATE UNIQUE INDEX ... ON legal_hub (lower(name), workspace_id)
-        #   WHERE is_deleted = false
-        UniqueConstraint(
+        Index(
+            "legal_hub_name_unique_per_workspace",
+            func.lower(name),
             "workspace_id",
-            "name",
-            name="legal_hub_name_unique_per_workspace",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
         # Maps Django's lh_one_default_per_workspace
-        UniqueConstraint(
+        Index(
+            "legal_hub_one_default_per_workspace",
             "workspace_id",
-            "is_default",
-            name="legal_hub_one_default_per_workspace",
-            postgresql_where="is_deleted = false AND is_default = true",
+            unique=True,
+            postgresql_where=text("is_deleted = false AND is_default = true"),
         ),
         # Maps Django's legal_hub_name_index
         Index("legal_hub_name_idx", "name"),
@@ -424,7 +418,6 @@ class LegalHub(SoftDeleteMixin, RuntimeBaseModel):
 # ---------------------------------------------------------------------------
 # legal_hub_agreement_mapping  (Django: ClickwrapLegalHubAgreementMapping)
 # Ordered list of agreements within a legal hub.
-# `display_order` renamed from Django's `order` (reserved SQL word).
 # ---------------------------------------------------------------------------
 
 
@@ -444,16 +437,14 @@ class LegalHubAgreementMapping(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's legal_hub_agreement_mapping_unique
-        UniqueConstraint(
+        Index(
+            "legal_hub_agreement_mapping_unique",
             "agreement_id",
             "legal_hub_id",
-            name="legal_hub_agreement_mapping_unique",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # Maps Django's lh_ag_mapping_lh_index
         Index("legal_hub_agreement_mapping_hub_idx", "legal_hub_id"),
-        # Maps Django's lh_ag_mapping_agreement_index
         Index("legal_hub_agreement_mapping_agreement_idx", "agreement_id"),
     )
 
@@ -473,13 +464,12 @@ class LegalHubCustomUrlMapping(SoftDeleteMixin, RuntimeBaseModel):
     )
 
     __table_args__ = (
-        # Maps Django's lh_custom_url_unique_per_agreement
-        UniqueConstraint(
+        Index(
+            "legal_hub_custom_url_unique_per_agreement",
             "custom_uri",
             "legal_hub_agreement_mapping_id",
-            name="legal_hub_custom_url_unique_per_agreement",
-            postgresql_where="is_deleted = false",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
-        # Maps Django's lh_custom_url_index
         Index("legal_hub_custom_url_mapping_uri_idx", "custom_uri"),
     )

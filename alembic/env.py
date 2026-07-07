@@ -11,10 +11,15 @@ Base.metadata knows about them when autogenerating migrations.
 
 import asyncio
 import logging
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
+
+# Add project root so `app` is importable when alembic is run from repo root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # ---------------------------------------------------------------------------
 # app imports — must be resolvable from the project root
