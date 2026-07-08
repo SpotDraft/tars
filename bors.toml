@@ -1,0 +1,6 @@
+status = ["lint", "test"]
+pr_status = ["call-central-workflow / security-report"]
+use_squash_merge = true
+use_codeowners = true
+required_approvals = 1
+delete_merged_branches = true
