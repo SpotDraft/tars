@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
+from app.core.hmac_auth import AdminHMACMiddleware
 from app.core.log_config import LoggingConfig
 
 dictConfig(LoggingConfig.to_dict())
@@ -25,7 +26,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Last added = outermost. HMAC must wrap GZip so it sees the raw request body.
 app.add_middleware(GZipMiddleware)
+app.add_middleware(AdminHMACMiddleware)
 
 
 @app.get("/ht", tags=["ops"])

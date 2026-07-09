@@ -15,5 +15,9 @@ class Settings(BaseSettings):
     # Used as the default value for domain_setting.default_domain
     CLUSTER_ID: str = "IN"
 
+    # HMAC auth for Django → tars admin proxy requests
+    TARS_HMAC_SECRET: str = "dev-tars-hmac-secret"
+    TARS_HMAC_TIMESTAMP_TOLERANCE_SECONDS: int = 300
+
 
 settings = Settings()
