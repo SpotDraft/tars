@@ -1,8 +1,12 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+if TYPE_CHECKING:
+    from typing import Self
 
 from app.core.config import settings
 
@@ -83,3 +87,13 @@ class SoftDeleteMixin:
     deleted_by_org_user_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
     )
+
+    @classmethod
+    def objects(cls) -> "Select[tuple[Self]]":
+        """SELECT excluding soft-deleted rows — the safe default for all queries."""
+        return select(cls).where(cls.is_deleted.is_(False))  # type: ignore[attr-defined]
+
+    @classmethod
+    def objects_including_deleted(cls) -> "Select[tuple[Self]]":
+        """SELECT including soft-deleted rows — opt-in when explicitly needed."""
+        return select(cls)
