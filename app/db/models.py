@@ -32,6 +32,7 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -107,6 +108,7 @@ class Packet(SoftDeleteMixin, RuntimeBaseModel):
         BigInteger, ForeignKey("packet_settings.id"), nullable=False, unique=True
     )
     updated_by_org_user_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
         comment="Last time an org user explicitly saved changes",
     )
@@ -322,8 +324,8 @@ class AgreementVersion(SoftDeleteMixin, RuntimeBaseModel):
         unique=True,
         default=uuid.uuid4,
     )
-    modified_by_org_user_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    published_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    modified_by_org_user_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Raw bigint — references OrganizationUser which lives in Django, not here
     published_by_org_user_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True
