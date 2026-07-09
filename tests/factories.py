@@ -21,7 +21,10 @@ class PacketSettingsFactory:
             workspace_id=kwargs.get("workspace_id", n),
             created_by_org_user_id=kwargs.get("created_by_org_user_id", n),
             agreement_ui_type=kwargs.get("agreement_ui_type", AgreementUiType.SINGLE_CHECKBOX),
-            clickwrap_texts=kwargs.get("clickwrap_texts", [{"text": "I agree to the terms."}]),
+            clickwrap_texts=kwargs.get(
+                "clickwrap_texts",
+                [{"text": "I agree to {#agreement_list#} as per the laws."}],
+            ),
             whitelisted_domains=kwargs.get("whitelisted_domains", []),
             show_audit_click_status=kwargs.get("show_audit_click_status", False),
             send_executed_audit_email=kwargs.get("send_executed_audit_email", False),
