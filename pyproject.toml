@@ -16,6 +16,11 @@ dependencies = [
 
     # Structured JSON logging (needed from first deployment for GCP Log Explorer)
     "python-json-logger>=3.2.0",
+
+    # Database — Postgres ORM + async driver + migrations
+    "SQLAlchemy[asyncio]==2.0.48",
+    "asyncpg==0.31.0",
+    "alembic==1.18.4",
 ]
 
 [dependency-groups]
