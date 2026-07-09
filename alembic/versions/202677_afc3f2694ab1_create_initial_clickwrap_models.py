@@ -124,7 +124,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('whitelabel_config_unique_per_workspace', 'whitelabel_config', ['workspace_id', 'is_active'], unique=True, postgresql_where=sa.text('is_deleted = false'))
+    op.create_index('whitelabel_config_unique_per_workspace', 'whitelabel_config', ['workspace_id'], unique=True, postgresql_where=sa.text('is_active = true AND is_deleted = false'))
     op.create_index('whitelabel_config_workspace_is_active_idx', 'whitelabel_config', ['workspace_id', 'is_active'], unique=False)
     op.create_table('agreement_version',
     sa.Column('agreement_id', sa.BigInteger(), nullable=False),
@@ -265,7 +265,7 @@ def downgrade() -> None:
     op.drop_index('agreement_version_name_slug_gin_idx', table_name='agreement_version', postgresql_using='gin', postgresql_ops={'name_slug': 'gin_trgm_ops'})
     op.drop_table('agreement_version')
     op.drop_index('whitelabel_config_workspace_is_active_idx', table_name='whitelabel_config')
-    op.drop_index('whitelabel_config_unique_per_workspace', table_name='whitelabel_config', postgresql_where=sa.text('is_deleted = false'))
+    op.drop_index('whitelabel_config_unique_per_workspace', table_name='whitelabel_config', postgresql_where=sa.text('is_active = true AND is_deleted = false'))
     op.drop_table('whitelabel_config')
     op.drop_table('packet_settings')
     op.drop_index('legal_hub_url_slug_idx', table_name='legal_hub')

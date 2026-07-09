@@ -213,9 +213,8 @@ class WhitelabelConfig(SoftDeleteMixin, RuntimeBaseModel):
         Index(
             "whitelabel_config_unique_per_workspace",
             "workspace_id",
-            "is_active",
             unique=True,
-            postgresql_where=text("is_deleted = false"),
+            postgresql_where=text("is_active = true AND is_deleted = false"),
         ),
         Index("whitelabel_config_workspace_is_active_idx", "workspace_id", "is_active"),
     )
