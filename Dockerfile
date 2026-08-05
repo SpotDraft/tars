@@ -6,7 +6,7 @@
 # with SafeDep PMG malware scanning. This is worth adopting for Tars too, but requires
 # the platform/security team to publish a runner image for this service first.
 # Track as a follow-up ticket.
-FROM --platform=linux/amd64 cgr.dev/spotdraft.com/python-fips:3.12
+FROM --platform=linux/amd64 us-central1-docker.pkg.dev/spotdraft-qa/sd-us-chainguard/python-fips:3.12
 
 # Prevent .pyc files, enable unbuffered stdout — standard across all SpotDraft FastAPI services
 ENV PYTHONDONTWRITEBYTECODE=1 \
